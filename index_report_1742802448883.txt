@@ -1,0 +1,20 @@
+Indexing Report
+====================
+Inserted: /Users/lorenabuzea/Documents/TEST SD.txt
+Inserted: /Users/lorenabuzea/Documents/Arduino/libraries/IRremote/keywords.txt
+Inserted: /Users/lorenabuzea/Documents/Arduino/libraries/DallasTemperature/keywords.txt
+Inserted: /Users/lorenabuzea/Documents/Arduino/libraries/OneWire/keywords.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test/cmake-build-debug/CMakeFiles/TargetDirectories.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test/cmake-build-debug/CMakeFiles/clion-log.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test/cmake-build-debug/CMakeFiles/clion-environment.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test/cmake-build-debug/CMakeCache.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test/CMakeLists.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/TargetDirectories.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/clion-log.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/clion-environment.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test2/cmake-build-debug/CMakeCache.txt
+Inserted: /Users/lorenabuzea/Documents/CLionProjects/test2/CMakeLists.txt
+====================
+Total files processed: 14
+Successfully inserted: 14
+Skipped or failed: 0

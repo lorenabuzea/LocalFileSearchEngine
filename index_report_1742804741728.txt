@@ -1,0 +1,20 @@
+Indexing Report
+====================
+Failed: /users/lorenabuzea/documents/TEST SD.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/Arduino/libraries/IRremote/keywords.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/Arduino/libraries/DallasTemperature/keywords.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/Arduino/libraries/OneWire/keywords.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test/cmake-build-debug/CMakeFiles/TargetDirectories.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test/cmake-build-debug/CMakeFiles/clion-log.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test/cmake-build-debug/CMakeFiles/clion-environment.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test/cmake-build-debug/CMakeCache.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test/CMakeLists.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/TargetDirectories.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/clion-log.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test2/cmake-build-debug/CMakeFiles/clion-environment.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test2/cmake-build-debug/CMakeCache.txt (DB insert error)
+Failed: /users/lorenabuzea/documents/CLionProjects/test2/CMakeLists.txt (DB insert error)
+====================
+Total files processed: 14
+Successfully inserted: 0
+Skipped or failed: 14
