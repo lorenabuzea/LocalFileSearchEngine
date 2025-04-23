@@ -35,7 +35,7 @@ public class SearchGUI extends JFrame {
     private FileCrawler fileCrawler;
 
     public SearchGUI() {
-        setTitle("📁 Local File Search Engine");
+        setTitle("Local File Search Engine");
         setSize(900, 650);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
