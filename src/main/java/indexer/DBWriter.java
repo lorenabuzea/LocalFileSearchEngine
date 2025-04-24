@@ -1,11 +1,13 @@
 package indexer;
 
+import java.io.File;
 import java.sql.*;
+import java.util.List;
 
 public class DBWriter {
 
     private static final String DB_URL = "jdbc:sqlite:/Users/lorenabuzea/Desktop/UTCN/AN3/SEM2/SD/SearchEngineProject/src/main/resources/search_engine.db";
-
+    private static final List<String> KEYWORDS = List.of("project", "report", "final", "search");
     private Connection connection;
 
     public DBWriter() {
@@ -41,12 +43,71 @@ public class DBWriter {
 
     private int computeScore(String path, String ext, long size) {
         int score = 0;
-        if (path.toLowerCase().contains("project")) score += 20;
-        if (ext.equalsIgnoreCase(".md")) score += 10;
-        if (size < 10000) score += 5;
-        score -= path.length(); // shorter paths preferred
-        return Math.max(score, 0);
+
+        String lowerPath = path.toLowerCase();
+
+        //ranking on path. shorter path is better. looking for fewer folders as well
+        int pathLength = lowerPath.split("[/\\\\]").length;
+        score+= Math.max(0,15-pathLength);
+
+
+        //ranking based on extensions
+        if (ext.equals(".md")) score += 15;
+        if (ext.equals(".txt")) score += 10;
+        if (ext.equals(".log")) score -= 5;
+
+        //ranking on keyword presence in path
+        for ( String keyword : KEYWORDS){
+            if ( lowerPath.contains(keyword)){
+                score +=20;
+            }
+        }
+
+        //ranking on file size. smaller is better
+        if (size < 10_000) score += 10;
+        else if ( size < 100_000) score +=5;
+
+        //ranking on last accessed files. if modified the last 7 days bring up score
+        long now = System.currentTimeMillis();
+        long age = now - new File(path).lastModified();
+        if (age < 7L * 24 * 60 * 60 * 1000) score += 10;
+
+        return score;
     }
+
+    public void updateAllScores(){
+        String selectSQL = "SELECT path, extension, size FROM files";
+        String updateSQL = "UPDATE files SET score = ? WHERE path = ?";
+
+        int updated  = 0;
+
+        try(
+                PreparedStatement selectStmt = connection.prepareStatement(selectSQL);
+                PreparedStatement updateStmt = connection.prepareStatement(updateSQL);
+                ResultSet rs = selectStmt.executeQuery()
+                ) {
+                while (rs.next()) {
+                    String path = rs.getString("path");
+                    String ext = rs.getString("extension");
+                    long size = rs.getLong("size");
+
+                    int score = computeScore(path, ext, size);
+
+                    updateStmt.setInt(1,score);
+                    updateStmt.setString(2,path);
+                    updateStmt.addBatch();
+                    updated++;
+
+                }
+                updateStmt.executeBatch();
+            System.out.println("Added scores for " + updated + "files");
+
+        }catch ( SQLException e){
+            System.err.println("Failed to update scores " + e.getMessage());
+
+    }
+    }
+
 
     public void close() {
         try {
