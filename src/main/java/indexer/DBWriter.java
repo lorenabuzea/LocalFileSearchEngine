@@ -1,7 +1,12 @@
 package indexer;
 
+import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DBWriter {
@@ -108,6 +113,50 @@ public class DBWriter {
     }
     }
 
+    public void generateCSVReport (List<File> indexedFiles) {
+        List<String> lines = new ArrayList<>();
+        lines.add("path,name,extension,size,score");
+
+        for (File files : indexedFiles) {
+            try {
+                String path = files.getAbsolutePath();
+                String name = files.getName();
+                String extension = getExtension(name);
+                long size = files.length();
+                int score = computeScore(path, extension, size);
+
+                lines.add(String.join(",",
+                        path,
+                        name,
+                        extension,
+                        String.valueOf(size),
+                        String.valueOf(score)));
+            } catch(Exception e){
+                System.err.println("Error processing file: " + e.getMessage());
+            }
+
+
+            lines.add("------------------");
+            lines.add("TOTAL FILES," + indexedFiles.size());
+
+            try {
+                String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd_HHmm").format(new java.util.Date());
+                String filename = "index_report_" + timestamp + ".csv";
+                Path reportPath = Path.of(filename);
+                Files.write(Path.of(filename), lines);
+                System.out.println("CSV report written to: " + filename);
+                if(Desktop.isDesktopSupported()){
+                    Desktop.getDesktop().open(reportPath.toFile());
+                }
+            } catch (IOException e) {
+                System.err.println("Failed to write CSV report: " + e.getMessage());
+            }
+        }
+    }
+    private String getExtension(String filename) {
+        int i = filename.lastIndexOf('.');
+        return (i > 0) ? filename.substring(i).toLowerCase() : "";
+        }
 
     public void close() {
         try {

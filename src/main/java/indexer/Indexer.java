@@ -45,7 +45,7 @@ public class Indexer {
         dbWriter.close();
     }
 
-    private String getExtension(String filename) {
+    public String getExtension(String filename) {
         int i = filename.lastIndexOf('.');
         return (i > 0) ? filename.substring(i).toLowerCase() : "";
     }

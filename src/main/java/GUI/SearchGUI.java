@@ -170,6 +170,7 @@ public class SearchGUI extends JFrame {
         }
 
         int success = 0;
+        List<File> succesfullyIndexedFiles = new ArrayList<>();
         List<String> report = new ArrayList<>();
         report.add("Indexing Report\n====================");
 
@@ -192,11 +193,11 @@ public class SearchGUI extends JFrame {
 
                 if (inserted) {
                     success++;
+                    succesfullyIndexedFiles.add(file); //track inserted files
                     report.add("Inserted: " + file.getAbsolutePath());
                 } else {
                     report.add("Failed: " + file.getAbsolutePath() + " (DB insert error)");
                 }
-
 
             } catch (Exception ex) {
                 report.add("Error: " + file.getAbsolutePath() + " (" + ex.getMessage() + ")");
@@ -208,15 +209,26 @@ public class SearchGUI extends JFrame {
         report.add("Successfully inserted: " + success);
         report.add("Skipped or failed: " + (loadedFiles.size() - success));
 
-        try {
-            String filename = "index_report_" + System.currentTimeMillis() + ".txt";
-            File reportFile = new File(filename);
-            Files.write(reportFile.toPath(), report);
-            JOptionPane.showMessageDialog(this,  success + " files inserted.\n Report saved to: " + reportFile.getAbsolutePath());
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Failed to write report: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        boolean hasProblems = report.stream().anyMatch(line ->
+                line.startsWith("Skipped:") || line.startsWith("Failed:") || line.startsWith("Error:"));
+
+        if (hasProblems) {
+            try {
+                String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd_HHmm").format(new java.util.Date());
+                String filename = "index_report_" + timestamp + ".csv";
+                File reportFile = new File(filename);
+                Files.write(reportFile.toPath(), report);
+                JOptionPane.showMessageDialog(this, success + " files inserted.\nReport saved to: " + reportFile.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Failed to write report: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            }
         }
+        if(!succesfullyIndexedFiles.isEmpty()){
+            dbWriter.generateCSVReport(succesfullyIndexedFiles);
+        }
+
     }
+
 
 
     private void updateResultsList() {
