@@ -1,5 +1,7 @@
 package GUI;
+
 import model.SearchResult;
+import observer.SearchHistoryTracker;
 import search.QueryProcessor;
 import search.ResultRetriever;
 import search.SnippetGenerator;
@@ -23,6 +25,9 @@ public class SearchGUI extends JFrame {
     private JList<String> resultsList;
     private JTextArea snippetArea;
     private JLabel searchLabel, resultLabel, snippetLabel, insertLabel;
+    private DefaultComboBoxModel<String> suggestionModel;
+
+    private JPopupMenu suggestionPopup;
 
     private DefaultListModel<String> listModel;
     private List<SearchResult> currentResults;
@@ -33,6 +38,7 @@ public class SearchGUI extends JFrame {
     private QueryProcessor queryProcessor;
     private DBWriter dbWriter;
     private FileCrawler fileCrawler;
+    private SearchHistoryTracker historyTracker;
 
     public SearchGUI() {
         setTitle("Local File Search Engine");
@@ -48,12 +54,15 @@ public class SearchGUI extends JFrame {
 
     private void setupUI() {
         searchField = new JTextField(30);
+        suggestionPopup = new JPopupMenu();
         searchButton = new JButton("🔍 Search");
         showAllButton = new JButton("📋 Show All Files");
 
+        suggestionModel = new DefaultComboBoxModel<>();
+
         insertPathField = new JTextField(30);
         loadButton = new JButton("📂 Load from Path");
-        saveButton = new JButton("💾 Save All to DB");
+        saveButton = new JButton("💾 Save to DB");
 
         listModel = new DefaultListModel<>();
         resultsList = new JList<>(listModel);
@@ -80,6 +89,7 @@ public class SearchGUI extends JFrame {
         topPanel.add(searchField);
         topPanel.add(searchButton);
         topPanel.add(showAllButton);
+        topPanel.add(new JLabel("Suggestions:"));
 
         JPanel insertPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         insertPanel.setBackground(Color.decode("#F5F5F5"));
@@ -128,6 +138,7 @@ public class SearchGUI extends JFrame {
         snippetGenerator = new SnippetGenerator();
         queryProcessor = new QueryProcessor();
         fileCrawler = new FileCrawler();
+        historyTracker = new SearchHistoryTracker();
     }
 
     private void handleSearch(ActionEvent e) {
@@ -137,8 +148,11 @@ public class SearchGUI extends JFrame {
         String parsed = queryProcessor.prepare(query);
         currentResults = retriever.search(parsed);
 
+        historyTracker.onSearch(query);
         updateResultsList();
+        updateSuggestionsPopup();
     }
+
 
     private void handleShowAll(ActionEvent e) {
         currentResults = retriever.search("");
@@ -170,7 +184,7 @@ public class SearchGUI extends JFrame {
         }
 
         int success = 0;
-        List<File> succesfullyIndexedFiles = new ArrayList<>();
+        List<File> successfullyIndexedFiles = new ArrayList<>();
         List<String> report = new ArrayList<>();
         report.add("Indexing Report\n====================");
 
@@ -193,7 +207,7 @@ public class SearchGUI extends JFrame {
 
                 if (inserted) {
                     success++;
-                    succesfullyIndexedFiles.add(file); //track inserted files
+                    successfullyIndexedFiles.add(file);
                     report.add("Inserted: " + file.getAbsolutePath());
                 } else {
                     report.add("Failed: " + file.getAbsolutePath() + " (DB insert error)");
@@ -223,13 +237,11 @@ public class SearchGUI extends JFrame {
                 JOptionPane.showMessageDialog(this, "Failed to write report: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
             }
         }
-        if(!succesfullyIndexedFiles.isEmpty()){
-            dbWriter.generateCSVReport(succesfullyIndexedFiles);
+
+        if (!successfullyIndexedFiles.isEmpty()) {
+            dbWriter.generateCSVReport(successfullyIndexedFiles);
         }
-
     }
-
-
 
     private void updateResultsList() {
         listModel.clear();
@@ -246,17 +258,8 @@ public class SearchGUI extends JFrame {
 
     private void showSnippet() {
         int index = resultsList.getSelectedIndex();
-        if (index >= 0) {
-            String content;
-            if (!loadedFiles.isEmpty() && index < loadedFiles.size()) {
-                try {
-                    content = Files.readString(loadedFiles.get(index).toPath());
-                } catch (Exception ex) {
-                    content = "Unable to read file.";
-                }
-            } else {
-                content = currentResults.get(index).content;
-            }
+        if (index >= 0 && index < currentResults.size()) {
+            String content = currentResults.get(index).content;
             snippetArea.setText(content);
         }
     }
@@ -265,6 +268,22 @@ public class SearchGUI extends JFrame {
         int i = filename.lastIndexOf('.');
         return (i > 0) ? filename.substring(i).toLowerCase() : "";
     }
+
+    private void updateSuggestionsPopup() {
+        suggestionPopup.removeAll(); // clear old suggestions
+
+        List<String> suggestions = historyTracker.suggestQueries();
+        if (suggestions.isEmpty()) return;
+
+        for (String suggestion : suggestions) {
+            JMenuItem item = new JMenuItem(suggestion);
+            item.addActionListener(e -> searchField.setText(suggestion)); // when clicked, set text
+            suggestionPopup.add(item);
+        }
+
+        suggestionPopup.show(searchField, 0, searchField.getHeight()); // show dropdown just below
+    }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
