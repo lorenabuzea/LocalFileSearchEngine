@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ResultRetriever {
+public class ResultRetriever implements SearchService{
 
     private final Connection connection;
 
@@ -15,6 +15,7 @@ public class ResultRetriever {
         this.connection = connection;
     }
 
+    @Override
     public List<SearchResult> search(String rawQuery) {
         QueryParser parser = new QueryParser();
         Map<String, String> terms = parser.parse(rawQuery);
