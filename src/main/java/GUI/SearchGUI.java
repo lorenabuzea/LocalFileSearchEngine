@@ -2,11 +2,14 @@ package GUI;
 
 import model.SearchResult;
 import observer.SearchHistoryTracker;
+import search.CachedSearchProxy;
 import search.QueryProcessor;
 import search.ResultRetriever;
 import search.SnippetGenerator;
 import indexer.DBWriter;
 import Crawler.FileCrawler;
+import util.SpellingCorrector;
+import widget.WidgetManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,6 +20,7 @@ import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
 public class SearchGUI extends JFrame {
 
@@ -33,12 +37,18 @@ public class SearchGUI extends JFrame {
     private List<SearchResult> currentResults;
     private List<File> loadedFiles = new ArrayList<>();
 
-    private ResultRetriever retriever;
+    private CachedSearchProxy retriever;
     private SnippetGenerator snippetGenerator;
     private QueryProcessor queryProcessor;
     private DBWriter dbWriter;
     private FileCrawler fileCrawler;
     private SearchHistoryTracker historyTracker;
+
+    private final WidgetManager widgetManager = new WidgetManager();
+    private final JPanel widgetPanelContainer = new JPanel(new FlowLayout());
+
+    private SpellingCorrector corrector;
+
 
     public SearchGUI() {
         setTitle("Local File Search Engine");
@@ -123,6 +133,9 @@ public class SearchGUI extends JFrame {
         loadButton.addActionListener(this::handleLoadPath);
         saveButton.addActionListener(this::handleBatchSave);
         resultsList.addListSelectionListener(e -> showSnippet());
+
+        add(widgetPanelContainer, BorderLayout.EAST);
+
     }
 
     private void setupSearchEngine() {
@@ -134,23 +147,59 @@ public class SearchGUI extends JFrame {
             System.exit(1);
         }
 
-        retriever = new ResultRetriever(conn);
+        ResultRetriever baseRetriever = new ResultRetriever(conn);
+        retriever = new CachedSearchProxy(baseRetriever);
         snippetGenerator = new SnippetGenerator();
         queryProcessor = new QueryProcessor();
         fileCrawler = new FileCrawler();
         historyTracker = new SearchHistoryTracker();
+
+        Set<String> allWords = dbWriter.getAllIndexedWords();
+        corrector = new SpellingCorrector(allWords);
     }
 
     private void handleSearch(ActionEvent e) {
-        String query = searchField.getText().trim();
-        if (query.isEmpty()) return;
+        String originalQuery = searchField.getText().trim();
+        if (originalQuery.isEmpty()) return;
 
-        String parsed = queryProcessor.prepare(query);
+        String[] tokens = originalQuery.split("\\s+");
+        StringBuilder correctedQueryBuilder = new StringBuilder();
+
+        for (String token : tokens) {
+            correctedQueryBuilder.append(corrector.correct(token)).append(" ");
+        }
+
+        String correctedQuery = correctedQueryBuilder.toString().trim();
+
+        String finalQueryToUse = originalQuery;
+        if (!originalQuery.equalsIgnoreCase(correctedQuery)) {
+            int choice = JOptionPane.showConfirmDialog(this,
+                    "Did you mean: \"" + correctedQuery + "\"?\nRun corrected search?",
+                    "Spelling Correction",
+                    JOptionPane.YES_NO_OPTION);
+            if (choice == JOptionPane.YES_OPTION) {
+                finalQueryToUse = correctedQuery;
+            }
+        }
+
+        String parsed = queryProcessor.prepare(finalQueryToUse);
         currentResults = retriever.search(parsed);
 
-        historyTracker.onSearch(query);
+        historyTracker.onSearch(finalQueryToUse);
         updateResultsList();
         updateSuggestionsPopup();
+        updateWidgets(finalQueryToUse);
+    }
+
+
+    private void updateWidgets(String query) {
+        widgetPanelContainer.removeAll();
+        List<JPanel> widgets = widgetManager.getRelevantWidgets(query);
+        for (JPanel panel : widgets) {
+            widgetPanelContainer.add(panel);
+        }
+        widgetPanelContainer.revalidate();
+        widgetPanelContainer.repaint();
     }
 
 
@@ -270,18 +319,18 @@ public class SearchGUI extends JFrame {
     }
 
     private void updateSuggestionsPopup() {
-        suggestionPopup.removeAll(); // clear old suggestions
+        suggestionPopup.removeAll(); //clear old suggestions
 
         List<String> suggestions = historyTracker.suggestQueries();
         if (suggestions.isEmpty()) return;
 
         for (String suggestion : suggestions) {
             JMenuItem item = new JMenuItem(suggestion);
-            item.addActionListener(e -> searchField.setText(suggestion)); // when clicked, set text
+            item.addActionListener(e -> searchField.setText(suggestion)); //when clicked it sets the text
             suggestionPopup.add(item);
         }
 
-        suggestionPopup.show(searchField, 0, searchField.getHeight()); // show dropdown just below
+        suggestionPopup.show(searchField, 0, searchField.getHeight()); //show dropdown just below
     }
 
 
