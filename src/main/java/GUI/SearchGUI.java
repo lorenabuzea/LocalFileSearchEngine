@@ -194,7 +194,7 @@ public class SearchGUI extends JFrame {
 
     private void updateWidgets(String query) {
         widgetPanelContainer.removeAll();
-        List<JPanel> widgets = widgetManager.getRelevantWidgets(query);
+        List<JPanel> widgets = widgetManager.getRelevantWidgets(query, currentResults);
         for (JPanel panel : widgets) {
             widgetPanelContainer.add(panel);
         }
