@@ -18,9 +18,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.Timestamp;
+import java.util.*;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SearchGUI extends JFrame {
 
@@ -46,6 +46,8 @@ public class SearchGUI extends JFrame {
 
     private final WidgetManager widgetManager = new WidgetManager();
     private final JPanel widgetPanelContainer = new JPanel(new FlowLayout());
+
+    private final JPanel metadataPanel = new JPanel();
 
     private SpellingCorrector corrector;
 
@@ -113,6 +115,7 @@ public class SearchGUI extends JFrame {
         centerPanel.setBackground(Color.decode("#F5F5F5"));
         centerPanel.add(resultLabel, BorderLayout.NORTH);
         centerPanel.add(listScroll, BorderLayout.CENTER);
+        centerPanel.add(metadataPanel, BorderLayout.SOUTH);  //new summary panel
 
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BorderLayout(5, 5));
@@ -191,15 +194,68 @@ public class SearchGUI extends JFrame {
         updateWidgets(finalQueryToUse);
     }
 
+    private JPanel getMetadataSummary(List<SearchResult> results){
+        Map<String, Long> extentionCounts = results.stream()
+                .collect(Collectors.groupingBy(
+                        r-> getExtension(r.filePath),
+                        Collectors.counting()
+                ));
+
+        Map<String, Long> yearCounts = results.stream()
+                .collect(Collectors.groupingBy(
+                        r -> {
+                            try {
+                                File f = new File(r.filePath);
+                                long mod = f.lastModified();
+                                Calendar cal = Calendar.getInstance();
+                                cal.setTimeInMillis(mod);
+                                return String.valueOf(cal.get(Calendar.YEAR));
+                            } catch (Exception ex) {
+                                return "Unknown";
+                            }
+                        },
+                        Collectors.counting()));
+
+
+        JPanel summaryPanel = new JPanel();
+        summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
+        summaryPanel.setBorder(BorderFactory.createTitledBorder("Metadata Summary"));
+
+        if(!extentionCounts.isEmpty()){
+            summaryPanel.add(new JLabel("File types:"));
+            extentionCounts.forEach(( ext, count) ->{
+                summaryPanel.add(new JLabel(" " + ext + ": "+ count));
+            });
+        }
+
+        if (!yearCounts.isEmpty()) {
+            summaryPanel.add(Box.createVerticalStrut(10));
+            summaryPanel.add(new JLabel("Modified Years:"));
+            yearCounts.forEach((year, count) -> {
+                summaryPanel.add(new JLabel("  " + year + ": " + count));
+            });
+        }
+
+        return summaryPanel;
+    }
 
     private void updateWidgets(String query) {
         widgetPanelContainer.removeAll();
+        metadataPanel.removeAll();
+
         List<JPanel> widgets = widgetManager.getRelevantWidgets(query, currentResults);
         for (JPanel panel : widgets) {
             widgetPanelContainer.add(panel);
         }
+
+        JPanel summary = getMetadataSummary(currentResults);
+        metadataPanel.add(summary);
+
         widgetPanelContainer.revalidate();
         widgetPanelContainer.repaint();
+
+        metadataPanel.revalidate();
+        metadataPanel.repaint();
     }
 
 
